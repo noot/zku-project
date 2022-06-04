@@ -1,15 +1,7 @@
-# Basic Sample Hardhat Project
+# Proof-of-Funds
 
-This project demonstrates a basic Hardhat use case. It comes with a sample contract, a test for that contract, a sample script that deploys that contract, and an example of a task implementation, which simply lists the available accounts.
+An application that allows a user to prove they had at least some amount of funds at a certain block.
 
-Try running some of the following tasks:
+## How it works
 
-```shell
-npx hardhat accounts
-npx hardhat compile
-npx hardhat clean
-npx hardhat test
-npx hardhat node
-node scripts/sample-script.js
-npx hardhat help
-```
+## Instructions

@@ -3,4 +3,4 @@
 test:
 
 build:
-	git submodule update --recursive
+	git submodule update --init
