@@ -24,9 +24,9 @@ template FullProof(levels, idx) {
 		privtoaddr.privkey[i] <== privkey[i];		
 	}
 
+	// TODO: can remove this line
 	addr <== privtoaddr.addr;
-
-	//addrs[idx] === privtoaddr.addr;
+	addrs[idx] === addr;
 }
 
 component main = FullProof(3, 0);

@@ -16,10 +16,10 @@ describe("Verifier", function () {
     // ganache-cli -d key 0
     const privkey = ethers.utils.arrayify("0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
     const privkeyTuple = [
-      bufToBn(privkey.slice(0,8)), 
-      bufToBn(privkey.slice(8,16)), 
-      bufToBn(privkey.slice(16,24)), 
       bufToBn(privkey.slice(24,32)),
+      bufToBn(privkey.slice(16,24)), 
+      bufToBn(privkey.slice(8,16)), 
+      bufToBn(privkey.slice(0,8)), 
     ]
     console.log(bufToBn(privkey.slice(0,8)))
 
@@ -41,8 +41,28 @@ describe("Verifier", function () {
     "circuits/build/main_js/main.wasm","circuits/build/circuit_final_plonk.zkey");
 
     console.log(publicSignals);
+    console.log(bnToBuf(publicSignals[0])); // root
+    console.log(bnToBuf(publicSignals[1])); // address
   });
 });
+
+function bnToBuf(bn) {
+  var hex = BigInt(bn).toString(16);
+  if (hex.length % 2) { hex = '0' + hex; }
+
+  var len = hex.length / 2;
+  var u8 = new Uint8Array(len);
+
+  var i = 0;
+  var j = 0;
+  while (i < len) {
+    u8[i] = parseInt(hex.slice(j, j+2), 16);
+    i += 1;
+    j += 2;
+  }
+
+  return u8;
+}
 
 function bufToBn(u8) {
   var hex = [];
