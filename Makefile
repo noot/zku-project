@@ -5,6 +5,6 @@ test:
 build:
 	git submodule update --init
 	cd circom-ecdsa 
-	npm i
+	yarn
 	cd ..
 	bash scripts/compile.sh
