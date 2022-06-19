@@ -21,7 +21,7 @@ snarkjs r1cs info build/${CIRCUIT}.r1cs
 if [ -f ./build/pot12_final.ptau ]; then
     echo "pot12_final.ptau already exists. Skipping."
 else
-    snarkjs powersoftau new bn128 20 build/pot12_0000.ptau -v
+    snarkjs powersoftau new bn128 23 build/pot12_0000.ptau -v
     snarkjs powersoftau contribute build/pot12_0000.ptau build/pot12_0001.ptau --name="First contribution" -v
     snarkjs powersoftau verify build/pot12_0001.ptau
     snarkjs powersoftau beacon build/pot12_0001.ptau build/pot12_beacon.ptau 0102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f 10 -n="Final Beacon"

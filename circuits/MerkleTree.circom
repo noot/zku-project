@@ -6,7 +6,6 @@ template CheckRoot(n) { // compute the root of a MerkleTree of n Levels
     signal input leaves[2**n];
     signal output root;
 
-    //[assignment] insert your code here to calculate the Merkle root from 2^n leaves
     component levelHasher[n];
 
     signal levels[n+1][2**n];
