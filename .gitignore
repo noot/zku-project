@@ -10,3 +10,4 @@ artifacts
 
 */build
 *.sym
+*.zkey
