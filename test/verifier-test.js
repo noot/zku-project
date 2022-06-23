@@ -56,7 +56,7 @@ describe("Verifier", function () {
   it("should generate a proof", async function() {
     let poseidon = await buildPoseidon();
 
-    const Verifier = await ethers.getContractFactory("PlonkVerifier");
+    const Verifier = await ethers.getContractFactory("Verifier");
     const verifier = await Verifier.deploy();
     await verifier.deployed();
 
