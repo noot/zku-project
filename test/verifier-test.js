@@ -1,6 +1,6 @@
 const { expect } = require("chai");
 const { ethers } = require("hardhat");
-const { plonk } = require("snarkjs");
+const { groth16 } = require("snarkjs");
 const circom_tester = require('circom_tester');
 const wasm_tester = circom_tester.wasm;
 const path = require("path");
@@ -96,7 +96,7 @@ describe("Verifier", function () {
     let sig = await sign(msghash, 
       privkey, {canonical: true, der: false});
 
-    const { proof, publicSignals } = await plonk.fullProve({
+    const { proof, publicSignals } = await groth16.fullProve({
       "r": scalarToBigIntArray(sig.slice(0, 32)),
       "s": scalarToBigIntArray(sig.slice(32, 64)),
       "msghash": scalarToBigIntArray(msghash),
@@ -105,7 +105,7 @@ describe("Verifier", function () {
       "path_elements": [bufToBn(tree[0][1]), bufToBn(tree[1][1]), bufToBn(tree[2][1])], // TODO
       "path_index": [1n, 1n, 1n], // TODO
     }, 
-    "circuits/build/main_js/main.wasm","circuits/build/circuit_final_plonk.zkey");
+    "circuits/build/main_js/main.wasm","circuits/build/circuit_final.zkey");
 
     console.log(publicSignals);
     console.log(bnToBuf(publicSignals[0])); // sigresult
