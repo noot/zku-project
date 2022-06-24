@@ -28,6 +28,7 @@ template FullProof(levels) {
 	}
 
 	sigresult <== verifier.result;
+	// TODO: confirm result is ok
 
 	// check inclusion proof
 	component tree = MerkleTreeInclusionProof(levels);
@@ -51,33 +52,17 @@ template FullProof(levels) {
         flattenPub.chunkedPubkey[1][i] <== pubkey[1][i];
     }
 
+    signal output pubkeyout[512];
+
     component pubToAddr = PubkeyToAddress();
     for (var i = 0; i < 512; i++) {
         pubToAddr.pubkeyBits[i] <== flattenPub.pubkeyBits[i];
+        pubkeyout[i] <== flattenPub.pubkeyBits[i];
     }
 
-    pubToAddr.address === leaf;
-
-	//component tree = CheckRoot(levels);
-	//component privtoaddr = PublicKey();
-
-	// signal input addrs[size];
-	// signal output root;
-	// signal output addr;
-
-	// for(var i=0; i<size; i++) {
-	// 	tree.leaves[i] <== addrs[i];
-	// }
-
-	// root <== tree.root;
-
-	// for(var i=0; i<4; i++) {
-	// 	privtoaddr.privkey[i] <== privkey[i];		
-	// }
-
-	// // TODO: can remove this line
-	// addr <== privtoaddr.addr;
-	// addrs[idx] === addr;
+    signal output address;
+    address <== pubToAddr.address;
+    //pubToAddr.address === leaf;
 }
 
 component main = FullProof(3);

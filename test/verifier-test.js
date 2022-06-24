@@ -17,7 +17,7 @@ async function merkleTree(levels, leaves) {
   let tree = [];
   let level = [];
   for (let i=0; i<leaves.length; i++) {
-    let hash = poseidon([leaves[i]]);
+    let hash = poseidon([ethers.utils.arrayify(leaves[i])]);
     level.push(hash);
   }
   tree.push(level);
@@ -56,9 +56,9 @@ describe("Verifier", function () {
   it("should generate a proof", async function() {
     let poseidon = await buildPoseidon();
 
-    const Verifier = await ethers.getContractFactory("Verifier");
-    const verifier = await Verifier.deploy();
-    await verifier.deployed();
+    // const Verifier = await ethers.getContractFactory("Verifier");
+    // const verifier = await Verifier.deploy();
+    // await verifier.deployed();
 
     const addrs = [
       "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
@@ -73,7 +73,7 @@ describe("Verifier", function () {
 
     let leaf = bufToBn(poseidon([ethers.utils.arrayify(addrs[0])]));
     console.log("leaf")
-    console.log(leaf);
+    console.log(bnToBuf(leaf));
 
     let tree = await merkleTree(3, addrs);
     console.log(tree);
@@ -91,7 +91,6 @@ describe("Verifier", function () {
     let pubkey = Point.fromPrivateKey(privkey);
     let msg = 1234n;
     let msghash = poseidon([bnToBuf(msg)]);
-    //test_cases.push([privkeys[idx], msghash_bigint, pubkey.x, pubkey.y]);
 
     let sig = await sign(msghash, 
       privkey, {canonical: true, der: false});
@@ -107,49 +106,67 @@ describe("Verifier", function () {
     }, 
     "circuits/build/main_js/main.wasm","circuits/build/circuit_final.zkey");
 
-    console.log(publicSignals);
+    //console.log(publicSignals);
     console.log(bnToBuf(publicSignals[0])); // sigresult
     console.log(bnToBuf(publicSignals[1])); // root
+    let psslice = publicSignals.slice(2, 515);
+    let pubkeyout = new Uint8Array(64);
+    for (let i=0; i<64; i++) {
+      pubkeyout[i] = bnToBuf(psslice[i*8])[0] & 
+                      bnToBuf(psslice[i*8+1]<<1)[0] &
+                      bnToBuf(psslice[i*8+2]<<2)[0] &
+                      bnToBuf(psslice[i*8+3]<<3)[0] &
+                      bnToBuf(psslice[i*8+4]<<4)[0] &
+                      bnToBuf(psslice[i*8+5]<<5)[0] &
+                      bnToBuf(psslice[i*8+6]<<6)[0] &
+                      bnToBuf(psslice[i*8+7]<<7)[0] 
+    }
+    console.log(pubkeyout);
+    console.log(bnToBuf(psslice[512]));
   })
 
 
-  it("should verify a valid proof", async function () {
-    const Verifier = await ethers.getContractFactory("PlonkVerifier");
-    const verifier = await Verifier.deploy();
-    await verifier.deployed();
+  // it("should verify a valid proof", async function () {
+  //   const Verifier = await ethers.getContractFactory("PlonkVerifier");
+  //   const verifier = await Verifier.deploy();
+  //   await verifier.deployed();
 
-    // ganache-cli -d key 0
-    const privkey = ethers.utils.arrayify("0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
-    const privkeyTuple = [
-      bufToBn(privkey.slice(24,32)),
-      bufToBn(privkey.slice(16,24)), 
-      bufToBn(privkey.slice(8,16)), 
-      bufToBn(privkey.slice(0,8)), 
-    ]
-    //console.log(bufToBn(privkey.slice(0,8)))
+  //   // ganache-cli -d key 0
+  //   const privkey = ethers.utils.arrayify("0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
+  //   const privkeyTuple = [
+  //     bufToBn(privkey.slice(24,32)),
+  //     bufToBn(privkey.slice(16,24)), 
+  //     bufToBn(privkey.slice(8,16)), 
+  //     bufToBn(privkey.slice(0,8)), 
+  //   ]
+  //   //console.log(bufToBn(privkey.slice(0,8)))
 
-    const addrs = [
-      "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
-      "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
-      "0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b",
-      "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d",
-      "0xd03ea8624C8C5987235048901fB614fDcA89b117",
-      "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC",
-      "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
-      "0x28a8746e75304c0780E011BEd21C72cD78cd535E",
-    ]
+  //   const addrs = [
+  //     "0x90F8bf6A479f320ead074411a4B0e7944Ea8c9C1",
+  //     "0xFFcf8FDEE72ac11b5c542428B35EEF5769C409f0",
+  //     "0x22d491Bde2303f2f43325b2108D26f1eAbA1e32b",
+  //     "0xE11BA2b4D45Eaed5996Cd0823791E0C93114882d",
+  //     "0xd03ea8624C8C5987235048901fB614fDcA89b117",
+  //     "0x95cED938F7991cd0dFcb48F0a06a40FA1aF46EBC",
+  //     "0x3E5e9111Ae8eB78Fe1CC3bb8915d5D461F3Ef9A9",
+  //     "0x28a8746e75304c0780E011BEd21C72cD78cd535E",
+  //   ]
 
-    const { proof, publicSignals } = await plonk.fullProve({
-      "privkey":privkeyTuple,
-      "addrs": addrs,
-    }, 
-    "circuits/build/main_js/main.wasm","circuits/build/circuit_final_plonk.zkey");
+  //   const { proof, publicSignals } = await plonk.fullProve({
+  //     "privkey":privkeyTuple,
+  //     "addrs": addrs,
+  //   }, 
+  //   "circuits/build/main_js/main.wasm","circuits/build/circuit_final_plonk.zkey");
 
-    console.log(publicSignals);
-    console.log(bnToBuf(publicSignals[0])); // root
-    console.log(bnToBuf(publicSignals[1])); // address
-  });
+  //   console.log(publicSignals);
+  //   console.log(bnToBuf(publicSignals[0])); // root
+  //   console.log(bnToBuf(publicSignals[1])); // address
+  // });
 });
+
+function bnToBytes(bn) {
+
+}
 
 function bnToBuf(bn) {
   var hex = BigInt(bn).toString(16);
