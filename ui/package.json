@@ -1,11 +1,11 @@
 {
-    "name": "semaphore-boilerplate",
+    "name": "proof-of-funds",
     "version": "1.0.0",
-    "description": "A simple Next.js/Hardhat privacy application with Semaphore.",
+    "description": "A simple ZK app for proving funds.",
     "license": "MIT",
     "private": true,
     "scripts": {
-        "dev": "npm-run-all -p next:dev hardhat:node",
+        "dev": "npm-run-all -p next:dev",
         "next:dev": "next dev",
         "hardhat:node": "hardhat node",
         "compile": "hardhat compile",
@@ -28,7 +28,6 @@
         "yup": "^0.32.11"
     },
     "devDependencies": {
-        "@appliedzkp/semaphore-contracts": "^0.8.0",
         "@nomiclabs/hardhat-ethers": "^2.0.4",
         "@nomiclabs/hardhat-waffle": "^2.0.2",
         "@openzeppelin/contracts": "^4.5.0",
@@ -38,7 +37,7 @@
         "@types/react": "17.0.39",
         "@zk-kit/incremental-merkle-tree": "^0.4.2",
         "chai": "^4.3.5",
-        "circomlibjs": "0.0.8",
+        "circomlibjs": "^0.0.8",
         "dotenv": "^16.0.0",
         "eslint": "8.8.0",
         "eslint-config-next": "12.0.10",
