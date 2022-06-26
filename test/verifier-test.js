@@ -28,6 +28,7 @@ async function merkleTree(levels, leaves) {
   let tree = [];
   let level = [];
   for (let i=0; i<leaves.length; i++) {
+    console.log(leaves[i])
     let hash = poseidon([bufToBn(ethers.utils.arrayify(leaves[i]))]);
     level.push(hash);
   }
@@ -84,40 +85,40 @@ function unstringifyBigInts(o) {
 describe("Verifier", function () {
   this.timeout(1000000);
 
-  it("should generate a proof", async function() {
-    let poseidon = await buildPoseidon();
+  // it("should generate a proof", async function() {
+  //   let poseidon = await buildPoseidon();
 
-    let tree = await merkleTree(3, addrs);
-    console.log(tree);
-    let leaf = bufToBn(tree[0][0]);
-    console.log("leaf", tree[0][0]);
+  //   let tree = await merkleTree(3, addrs);
+  //   //console.log(tree);
+  //   let leaf = bufToBn(tree[0][0]);
+  //   //console.log("leaf", tree[0][0]);
 
-    // ganache-cli -d key 0
-    const privkey = ethers.utils.arrayify("0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
+  //   // ganache-cli -d key 0
+  //   const privkey = ethers.utils.arrayify("0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d")
 
-    let pubkey = Point.fromPrivateKey(privkey);
-    let msg = 1234n;
-    let msghash = poseidon([bnToBuf(msg)]);
+  //   let pubkey = Point.fromPrivateKey(privkey);
+  //   let msg = 1234n;
+  //   let msghash = poseidon([bnToBuf(msg)]);
 
-    let sig = await sign(msghash, 
-      privkey, {canonical: true, der: false});
+  //   let sig = await sign(msghash, 
+  //     privkey, {canonical: true, der: false});
 
-    const { proof, publicSignals } = await groth16.fullProve({
-      "r": scalarToBigIntArray(sig.slice(0, 32)),
-      "s": scalarToBigIntArray(sig.slice(32, 64)),
-      "msghash": scalarToBigIntArray(msghash),
-      "pubkey": [scalarToBigIntArray(bnToBuf(pubkey.x)), scalarToBigIntArray(bnToBuf(pubkey.y))],
-      "leaf": leaf,
-      "path_elements": [bufToBn(tree[0][1]), bufToBn(tree[1][1]), bufToBn(tree[2][1])], // TODO
-      "path_index": [1n, 1n, 1n], // TODO
-    }, 
-    "circuits/build/main_js/main.wasm","circuits/build/circuit_final.zkey");
+  //   const { proof, publicSignals } = await groth16.fullProve({
+  //     "r": scalarToBigIntArray(sig.slice(0, 32)),
+  //     "s": scalarToBigIntArray(sig.slice(32, 64)),
+  //     "msghash": scalarToBigIntArray(msghash),
+  //     "pubkey": [scalarToBigIntArray(bnToBuf(pubkey.x)), scalarToBigIntArray(bnToBuf(pubkey.y))],
+  //     "leaf": leaf,
+  //     "path_elements": [bufToBn(tree[0][1]), bufToBn(tree[1][1]), bufToBn(tree[2][1])], // TODO
+  //     "path_index": [1n, 1n, 1n], // TODO
+  //   }, 
+  //   "circuits/build/main_js/main.wasm","circuits/build/circuit_final.zkey");
 
-    //console.log(publicSignals);
-    console.log(bnToBuf(publicSignals[0])); // root
-    console.log(bnToBuf(publicSignals[1])); // address
-    console.log(bnToBuf(publicSignals[2])); // leafout
-  })
+  //   //console.log(publicSignals);
+  //   //console.log(bnToBuf(publicSignals[0])); // root
+  //   //console.log(bnToBuf(publicSignals[1])); // address
+  //   //console.log(bnToBuf(publicSignals[2])); // leafout
+  // })
 
   it("should verify a proof with solidity", async function() {
     const Verifier = await ethers.getContractFactory("Verifier");
@@ -162,6 +163,11 @@ describe("Verifier", function () {
     const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
     const c = [argv[6], argv[7]];
     const input = argv.slice(8);
+
+    console.log(a)
+    console.log(b)
+    console.log(c)
+    console.log(input)
 
     expect(await verifier.verifyProof(a, b, c, input)).to.be.true;
   })

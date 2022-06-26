@@ -139,10 +139,9 @@ function unstringifyBigInts(o) {
 }
 
 async function verifyProof(proof, publicSignals, provider) {
-    const contract = new Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", Verifier.abi)
-    //const provider = new providers.JsonRpcProvider("http://localhost:8545")
-
-    const contractOwner = contract.connect(provider.getSigner())
+    let contract = new Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", Verifier.abi)
+    //const contractOwner = contract.connect(provider.getSigner())
+    contract = contract.connect(provider);
 
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
@@ -154,14 +153,12 @@ async function verifyProof(proof, publicSignals, provider) {
     const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
     const c = [argv[6], argv[7]];
     const input = argv.slice(8);
+    console.log(a)
+    console.log(b)
+    console.log(c)
+    console.log(input)
 
-    //try {
-    return await contractOwner.verifyProof(a, b, c, input);
-    // } catch (error) {
-    //     const { message } = JSON.parse(error.body).error
-    //     const reason = message.substring(message.indexOf("'") + 1, message.lastIndexOf("'"))
-    //     return reason
-    // }
+    return await contract.verifyProof(a, b, c, input);
 }
 
 export default function Home() {
@@ -198,7 +195,7 @@ export default function Home() {
         let addrList = mapToList(addrs).slice(0, 7);
         addrList.push(await signer.getAddress());
         console.log(addrList);
-        setLogs(`got anonymity set, generating proof of funds...`);
+        setLogs(`got anonymity set, generating proof of funds (takes a few minutes)...`);
 
         let {proof, publicSignals} = await generateProof(utils.arrayify(signature), 
             bnToBuf(msghash), utils.arrayify(pubkey), addrList);
@@ -226,7 +223,7 @@ export default function Home() {
 
                 <form onSubmit={handleSubmit(onSubmit)}>
                   {/* register your input into the hook by invoking the "register" function */}
-                  <input defaultValue="amount" {...register("amount")} />
+                  <input defaultValue="amount to prove" {...register("amount")} />
 
                   <input type="submit" />
                 </form>
