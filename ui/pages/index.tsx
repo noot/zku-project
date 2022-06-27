@@ -1,7 +1,8 @@
 import detectEthereumProvider from "@metamask/detect-provider"
 // import { Strategy, ZkIdentity } from "@zk-kit/identity"
 // import { generateMerkleProof, Semaphore } from "@zk-kit/protocols"
-import { providers, utils, Contract } from "ethers"
+import ethers from "ethers";
+import { providers, utils, Contract, ContractFactory } from "ethers"
 import Head from "next/head"
 import React from "react"
 import styles from "../styles/Home.module.css"
@@ -18,8 +19,6 @@ let userSchema = object({
 })
 
 function scalarToBigIntArray(s) {
-  //assert(s.length == 32);
-
   return [
       bufToBn(s.slice(24,32)),
       bufToBn(s.slice(16,24)), 
@@ -61,7 +60,6 @@ function bufToBn(u8) {
 
 async function merkleTree(levels, leaves) {
   // TODO: check leaves is power of 2 and is an array
-  //let poseidon = await buildPoseidon();
 
   // hash leaves
   let tree = [];
@@ -78,10 +76,8 @@ async function merkleTree(levels, leaves) {
       let hash = poseidon([tree[i][j], tree[i][j+1]]);
       level.push(hash);
     }
-    //assert(level.length * 2 == tree[i].length);
     tree.push(level);
   }
-  //assert(tree[levels].length == 1);
   return tree
 }
 
@@ -139,9 +135,12 @@ function unstringifyBigInts(o) {
 }
 
 async function verifyProof(proof, publicSignals, provider) {
-    let contract = new Contract("0x5FbDB2315678afecb367f032d93F642f64180aa3", Verifier.abi)
-    //const contractOwner = contract.connect(provider.getSigner())
+    //let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3" // TODO: this is for dev
+    let contract = new Contract(contractAddr, Verifier.abi)
     contract = contract.connect(provider);
+
+    // let code = await provider.getCode(contractAddr);
+    // console.log(code)
 
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
@@ -153,13 +152,11 @@ async function verifyProof(proof, publicSignals, provider) {
     const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
     const c = [argv[6], argv[7]];
     const input = argv.slice(8);
-    console.log(a)
-    console.log(b)
-    console.log(c)
-    console.log(input)
 
     return await contract.verifyProof(a, b, c, input);
 }
+
+let contractAddr;
 
 export default function Home() {
     const [logs, setLogs] = React.useState("Connect your wallet!")
@@ -176,6 +173,10 @@ export default function Home() {
 
         const ethersProvider = new providers.Web3Provider(provider)
         const signer = ethersProvider.getSigner()
+
+        // let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3" // TODO: this is for dev
+        // let code = await ethersProvider.getCode(contractAddr);
+        // console.log(code)
 
         //const msg = "Sign this message to prove account ownership";
 
@@ -206,6 +207,24 @@ export default function Home() {
         setLogs(res)
     }
 
+    const deploy = async function() {
+        setLogs(`deploying Verifier contract...`);
+        const provider = (await detectEthereumProvider()) as any
+        await provider.request({ method: "eth_requestAccounts" })
+
+        const ethersProvider = new providers.Web3Provider(provider)
+        const signer = ethersProvider.getSigner()      
+
+        const VerifierContract = new ContractFactory(Verifier.abi, Verifier.bytecode, signer)
+        const verifier = await VerifierContract.deploy()
+        await verifier.deployTransaction.wait()
+        setLogs(`Verifier contract has been deployed to: ${verifier.address}`)
+
+       let code = await ethersProvider.getCode(verifier.address);
+        console.log(code)
+        contractAddr = verifier.address;
+    }
+
     return (
         <div className={styles.container}>
             <Head>
@@ -225,12 +244,12 @@ export default function Home() {
                   {/* register your input into the hook by invoking the "register" function */}
                   <input defaultValue="amount to prove" {...register("amount")} />
 
-                  <input type="submit" />
+                  <input type="submit" value="prove funds!" />
                 </form>
 
-  {/*              <div onClick={() => greet()} className={styles.button}>
-                    Greet
-                </div>*/}
+               <div onClick={() => deploy()} className={styles.button}>
+                    deploy contract
+                </div>
             </main>
         </div>
     )

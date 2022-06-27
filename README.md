@@ -33,10 +33,12 @@ npx hardhat test
 
 ## UI (development)
 
-To run the UI locally, firstly import the following key (ganache's first deterministic key) into MetaMask:
+To run the UI locally, firstly import the following key (hardhat's first deterministic key) into MetaMask:
 ```
-0x4f3edf983ac636a65a842ce7c78d9aa706d3b113bce9c46f30d7d21715b23b1d
+0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
 ```
+
+Make sure MetaMask's network is set to `localhost:8545`.
 
 Then, run the following script to build and deploy the contract and start the UI:
 ```bash
