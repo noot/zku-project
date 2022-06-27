@@ -1,5 +1,7 @@
 pragma circom 2.0.0;
 
+include "../node_modules/circomlib/circuits/poseidon.circom";
+
 include "./MerkleTree.circom";
 //include "./Address.circom";
 
@@ -17,7 +19,7 @@ template FullProof(levels) {
 	signal input s[k];
 	signal input msghash[k];
 	signal input pubkey[2][k];
-	signal output sigresult;
+	//signal output sigresult;
 
 	for(var i=0; i<k; i++) {
 		verifier.r[i] <== r[i];
@@ -27,14 +29,17 @@ template FullProof(levels) {
 		verifier.pubkey[1][i] <== pubkey[1][i];
 	}
 
-	sigresult <== verifier.result;
+	//sigresult <== verifier.result;
+
+	// confirm signature is ok
+	verifier.result === 1;
 
 	// check inclusion proof
 	component tree = MerkleTreeInclusionProof(levels);
 	signal input leaf; // should equal address of pubkey above
     signal input path_elements[levels];
-    signal input path_index[levels]; // path index are 0's and 1's indicating whether the current element is on the left or right
-    signal output root; 
+    signal input path_index[levels]; 
+    signal output root; // TODO: accept expected root as input?
 
     tree.leaf <== leaf;
     for(var i=0; i<levels; i++) {
@@ -51,33 +56,25 @@ template FullProof(levels) {
         flattenPub.chunkedPubkey[1][i] <== pubkey[1][i];
     }
 
+    //signal output pubkeyout[512];
+
     component pubToAddr = PubkeyToAddress();
     for (var i = 0; i < 512; i++) {
         pubToAddr.pubkeyBits[i] <== flattenPub.pubkeyBits[i];
+        //pubkeyout[i] <== flattenPub.pubkeyBits[i];
     }
 
-    pubToAddr.address === leaf;
+    // address generated from public key of signature
+    signal output address;
+    address <== pubToAddr.address;
 
-	//component tree = CheckRoot(levels);
-	//component privtoaddr = PublicKey();
+    // hashed address should match input leaf
+    signal output leafout;
+    component hasher = Poseidon(1);
+    hasher.inputs[0] <== address;
+    leafout <== hasher.out;
 
-	// signal input addrs[size];
-	// signal output root;
-	// signal output addr;
-
-	// for(var i=0; i<size; i++) {
-	// 	tree.leaves[i] <== addrs[i];
-	// }
-
-	// root <== tree.root;
-
-	// for(var i=0; i<4; i++) {
-	// 	privtoaddr.privkey[i] <== privkey[i];		
-	// }
-
-	// // TODO: can remove this line
-	// addr <== privtoaddr.addr;
-	// addrs[idx] === addr;
+    //leafout === leaf; 
 }
 
 component main = FullProof(3);
