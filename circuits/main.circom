@@ -19,7 +19,6 @@ template FullProof(levels) {
 	signal input s[k];
 	signal input msghash[k];
 	signal input pubkey[2][k];
-	//signal output sigresult;
 
 	for(var i=0; i<k; i++) {
 		verifier.r[i] <== r[i];
@@ -28,8 +27,6 @@ template FullProof(levels) {
 		verifier.pubkey[0][i] <== pubkey[0][i];
 		verifier.pubkey[1][i] <== pubkey[1][i];
 	}
-
-	//sigresult <== verifier.result;
 
 	// confirm signature is ok
 	verifier.result === 1;
@@ -56,12 +53,9 @@ template FullProof(levels) {
         flattenPub.chunkedPubkey[1][i] <== pubkey[1][i];
     }
 
-    //signal output pubkeyout[512];
-
     component pubToAddr = PubkeyToAddress();
     for (var i = 0; i < 512; i++) {
         pubToAddr.pubkeyBits[i] <== flattenPub.pubkeyBits[i];
-        //pubkeyout[i] <== flattenPub.pubkeyBits[i];
     }
 
     // address generated from public key of signature

@@ -7,4 +7,4 @@ build:
 	cd circom-ecdsa 
 	yarn
 	cd ..
-	bash scripts/compile.sh
+	bash scripts/compile-groth.sh

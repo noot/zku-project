@@ -79,25 +79,35 @@ async function merkleTree(levels, leaves) {
   return tree
 }
 
-function getProof(tree, hashedLeaf) {
-  // TODO
-  let leafIdx;
-  for(var i=0; i<tree[0].length; i++) {
-    if (tree[0][i] == hashedLeaf) {
-        leafIdx = 1;
-        break;
+function getProof(tree, leafIdx) {
+  let elements = [];
+  let indices = [];
+
+  console.log(tree)
+
+  for(var i=0; i<tree.length-1; i++) {
+    console.log("proof", i, leafIdx);
+    if (leafIdx%2 == 0) { //left
+        elements.push(tree[i][leafIdx+1]);
+        indices.push(0n);
+    } else { //right
+        elements.push(tree[i][leafIdx-1]);
+        indices.push(1n);
     }
+
+    leafIdx = Math.floor(leafIdx/2);
   }
 
-  if (leafIdx == null) {
-    console.log("failed to find leaf in tree", hashedLeaf);
-    return;
-  }
+  return {elements, indices}
 }
 
-async function generateProof(sig, msghash, pubkey, addrs) {
+async function generateProof(sig, msghash, pubkey, addrs, leafIdx) {
     let tree = await merkleTree(3, addrs);
-    let leaf = tree[0][0];
+    let leaf = tree[0][leafIdx];
+    let merkleProof = getProof(tree, leafIdx);
+    console.log("leaf", leaf)
+    console.log("leafIdx", leafIdx)
+    console.log("merkleProof", merkleProof)
 
     let pubkeyX = pubkey.slice(1, 33);
     let pubkeyY = pubkey.slice(33, 65);
@@ -108,8 +118,8 @@ async function generateProof(sig, msghash, pubkey, addrs) {
       "msghash": scalarToBigIntArray(msghash),
       "pubkey": [scalarToBigIntArray(pubkeyX), scalarToBigIntArray(pubkeyY)],
       "leaf": leaf,
-      "path_elements": [tree[0][1], tree[1][1], tree[2][1]], // TODO
-      "path_index": [1n, 1n, 1n], // TODO
+      "path_elements": merkleProof.elements,// [tree[0][1], tree[1][1], tree[2][1]], // TODO
+      "path_index": merkleProof.indices,//[1n, 1n, 1n], // TODO
     }, 
     "./main.wasm","./circuit_final.zkey");
 
@@ -144,13 +154,9 @@ function unstringifyBigInts(o) {
     }
 }
 
-async function verifyProof(proof, publicSignals, provider) {
-    //let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3" // TODO: this is for dev
+async function verifyProof(proof, publicSignals, provider, contractAddr) {
     let contract = new Contract(contractAddr, Verifier.abi)
     contract = contract.connect(provider);
-
-    // let code = await provider.getCode(contractAddr);
-    // console.log(code)
 
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
@@ -168,8 +174,22 @@ async function verifyProof(proof, publicSignals, provider) {
     return ok;
 }
 
-// TODO: set based on network
-let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+function getRandomInt(max) {
+  return Math.floor(Math.random() * max);
+}
+
+const devContractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
+const goerliContractAddr = "0x66737DFc6798e854012f7fAb39157beF44440972";
+
+function getContractAddr(chainID) {
+    if (chainID == 5) {
+        return goerliContractAddr
+    } else if (chainID == 31337) {
+        return devContractAddr
+    } else {
+        console.error("unsupported chain ID", chainID)
+    }
+}
 
 export default function Home() {
     const [logs, setLogs] = React.useState("Connect your wallet!")
@@ -187,12 +207,6 @@ export default function Home() {
         const ethersProvider = new providers.Web3Provider(provider)
         const signer = ethersProvider.getSigner()
 
-        // let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3" // TODO: this is for dev
-        // let code = await ethersProvider.getCode(contractAddr);
-        // console.log(code)
-
-        //const msg = "Sign this message to prove account ownership";
-
         let msghash = await poseidon([1234n]); // arbitrary hash
         console.log(msghash)
         const signature = await signer.signMessage(msghash);
@@ -205,18 +219,22 @@ export default function Home() {
         let addrs = await getAccountsWithMinBalance(ethersProvider, 7, validatedData.amount);
         console.log(addrs)
 
-        // TODO: randomize location of addr in tree
-        let addrList = mapToList(addrs).slice(0, 7);
+        // randomize location of addr in tree
+        let leafIdx = getRandomInt(8);
+        let addrList = mapToList(addrs).slice(0, leafIdx)
         addrList.push(await signer.getAddress());
+        addrList.push(...mapToList(addrs).slice(leafIdx, 7))
         console.log(addrList);
+
         setLogs(`got anonymity set, generating proof of funds (takes a few minutes)...`);
 
         let {proof, publicSignals} = await generateProof(utils.arrayify(signature), 
-            bnToBuf(msghash), utils.arrayify(pubkey), addrList);
+            bnToBuf(msghash), utils.arrayify(pubkey), addrList, leafIdx);
 
         setLogs("proof generated, verifying in contract...")
 
-        let res = await verifyProof(proof, publicSignals, ethersProvider);
+        let network = await provider.getNetwork();
+        let res = await verifyProof(proof, publicSignals, ethersProvider, getContractAddr(network.chainID));
         if (res) {
             setLogs("proof verified!")
         } else {
@@ -237,9 +255,8 @@ export default function Home() {
         await verifier.deployTransaction.wait()
         setLogs(`Verifier contract has been deployed to: ${verifier.address}`)
 
-        let code = await ethersProvider.getCode(verifier.address);
-        console.log("deployed code", code);
-        contractAddr = verifier.address;
+        // let code = await ethersProvider.getCode(verifier.address);
+        // console.log("deployed code", code);
     }
 
     return (

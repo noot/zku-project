@@ -153,6 +153,11 @@ describe("Verifier", function () {
     }, 
     "circuits/build/main_js/main.wasm","circuits/build/circuit_final.zkey");
 
+    console.log(publicSignals);
+    console.log(bnToBuf(publicSignals[0])); // root
+    console.log(bnToBuf(publicSignals[1])); // address
+    console.log(bnToBuf(publicSignals[2])); // leafout
+  
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
     const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
@@ -163,11 +168,6 @@ describe("Verifier", function () {
     const b = [[argv[2], argv[3]], [argv[4], argv[5]]];
     const c = [argv[6], argv[7]];
     const input = argv.slice(8);
-
-    console.log(a)
-    console.log(b)
-    console.log(c)
-    console.log(input)
 
     expect(await verifier.verifyProof(a, b, c, input)).to.be.true;
   })
