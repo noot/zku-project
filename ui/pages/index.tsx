@@ -202,9 +202,12 @@ export default function Home() {
         const ethersProvider = new providers.Web3Provider(provider)
         const signer = ethersProvider.getSigner()
 
+        let network = await ethersProvider.getNetwork();
+        console.log(network);
+        console.log(getContractAddr(network.chainId));
+
         let signerAddr = await signer.getAddress();
         let balance = await ethersProvider.getBalance(signerAddr);
-        console.log(balance)
         if (utils.formatEther(balance) < validatedData.amount) {
             setLogs(`error: your account has less than ${validatedData.amount} ETH!`);
             return;
@@ -231,9 +234,8 @@ export default function Home() {
 
         setLogs("proof generated, verifying in contract...")
 
-        let network = await ethersProvider.getNetwork();
         // TODO: also verify that the accounts in the proof have the right balance
-        let res = await verifyProof(proof, publicSignals, ethersProvider, getContractAddr(network.chainID));
+        let res = await verifyProof(proof, publicSignals, ethersProvider, getContractAddr(network.chainId));
         if (res) {
             setLogs("proof verified!")
         } else {
