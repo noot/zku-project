@@ -49,6 +49,15 @@ Then, go to `http://localhost:3000` to see the UI.
 
 ## UI (Goerli testnet)
 
+Make sure MetaMask's network is set to Goerli and you have an account with some Goerli ETH in it (unless you want to prove you have 0 ETH!)
+
+Then, run the following script to build and deploy the contract and start the UI:
+```bash
+bash scripts/start-ui.sh
+```
+
+Then, go to `http://localhost:3000` to see the UI.
+
 ## Applications
 
 Proof-of-Funds has potential applications including, but not limited to:

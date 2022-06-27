@@ -203,8 +203,6 @@ export default function Home() {
         const signer = ethersProvider.getSigner()
 
         let network = await ethersProvider.getNetwork();
-        console.log(network);
-        console.log(getContractAddr(network.chainId));
 
         let signerAddr = await signer.getAddress();
         let balance = await ethersProvider.getBalance(signerAddr);
