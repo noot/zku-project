@@ -1,7 +1,6 @@
 import detectEthereumProvider from "@metamask/detect-provider"
 // import { Strategy, ZkIdentity } from "@zk-kit/identity"
 // import { generateMerkleProof, Semaphore } from "@zk-kit/protocols"
-import ethers from "ethers";
 import { providers, utils, Contract, ContractFactory } from "ethers"
 import Head from "next/head"
 import React from "react"
@@ -83,10 +82,7 @@ function getProof(tree, leafIdx) {
   let elements = [];
   let indices = [];
 
-  console.log(tree)
-
   for(var i=0; i<tree.length-1; i++) {
-    console.log("proof", i, leafIdx);
     if (leafIdx%2 == 0) { //left
         elements.push(tree[i][leafIdx+1]);
         indices.push(0n);
@@ -105,9 +101,9 @@ async function generateProof(sig, msghash, pubkey, addrs, leafIdx) {
     let tree = await merkleTree(3, addrs);
     let leaf = tree[0][leafIdx];
     let merkleProof = getProof(tree, leafIdx);
-    console.log("leaf", leaf)
-    console.log("leafIdx", leafIdx)
-    console.log("merkleProof", merkleProof)
+    // console.log("leaf", leaf)
+    // console.log("leafIdx", leafIdx)
+    // console.log("merkleProof", merkleProof)
 
     let pubkeyX = pubkey.slice(1, 33);
     let pubkeyY = pubkey.slice(33, 65);
@@ -170,7 +166,6 @@ async function verifyProof(proof, publicSignals, provider, contractAddr) {
     const input = argv.slice(8);
 
     let ok = await contract.verifyProof(a, b, c, input);
-    console.log(ok);
     return ok;
 }
 
@@ -198,7 +193,7 @@ export default function Home() {
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const onSubmit = async function (data) {
         const validatedData = await userSchema.validate(data);
-        console.log(validatedData);
+        console.log("got user input", validatedData);
 
         setLogs(`creating proof of funds (${validatedData.amount} ETH)...`)
         const provider = (await detectEthereumProvider()) as any
@@ -207,24 +202,27 @@ export default function Home() {
         const ethersProvider = new providers.Web3Provider(provider)
         const signer = ethersProvider.getSigner()
 
+        let signerAddr = await signer.getAddress();
+        let balance = await ethersProvider.getBalance(signerAddr);
+        console.log(balance)
+        if (utils.formatEther(balance) < validatedData.amount) {
+            setLogs(`error: your account has less than ${validatedData.amount} ETH!`);
+            return;
+        }
+
         let msghash = await poseidon([1234n]); // arbitrary hash
-        console.log(msghash)
         const signature = await signer.signMessage(msghash);
-        console.log(signature)
         let pubkey = await utils.recoverPublicKey(bnToBuf(msghash), signature);
-        console.log(pubkey)
 
         setLogs(`gathering anonymity set of accounts with at least ${validatedData.amount} ETH...`);
-        // TODO: get set
         let addrs = await getAccountsWithMinBalance(ethersProvider, 7, validatedData.amount);
-        console.log(addrs)
 
         // randomize location of addr in tree
         let leafIdx = getRandomInt(8);
         let addrList = mapToList(addrs).slice(0, leafIdx)
-        addrList.push(await signer.getAddress());
+        addrList.push(signerAddr);
         addrList.push(...mapToList(addrs).slice(leafIdx, 7))
-        console.log(addrList);
+        console.log("anonymity set", addrList);
 
         setLogs(`got anonymity set, generating proof of funds (takes a few minutes)...`);
 
@@ -233,12 +231,13 @@ export default function Home() {
 
         setLogs("proof generated, verifying in contract...")
 
-        let network = await provider.getNetwork();
+        let network = await ethersProvider.getNetwork();
+        // TODO: also verify that the accounts in the proof have the right balance
         let res = await verifyProof(proof, publicSignals, ethersProvider, getContractAddr(network.chainID));
         if (res) {
             setLogs("proof verified!")
         } else {
-            setLogs("invalid proof")
+            setLogs("invalid proof :(")
         }
     }
 
@@ -254,9 +253,6 @@ export default function Home() {
         const verifier = await VerifierContract.deploy()
         await verifier.deployTransaction.wait()
         setLogs(`Verifier contract has been deployed to: ${verifier.address}`)
-
-        // let code = await ethersProvider.getCode(verifier.address);
-        // console.log("deployed code", code);
     }
 
     return (
@@ -276,11 +272,12 @@ export default function Home() {
 
                 <form onSubmit={handleSubmit(onSubmit)}>
                   {/* register your input into the hook by invoking the "register" function */}
-                  <input defaultValue="amount to prove" {...register("amount")} />
+                  <input defaultValue="amount to prove (in ETH)" {...register("amount")} />
 
                   <input type="submit" value="prove funds!" />
                 </form>
 
+                <p></p>
                <div onClick={() => deploy()} className={styles.button}>
                     deploy contract
                 </div>
