@@ -47,8 +47,6 @@ function bnToBuf(bn) {
 
 function bufToBn(u8) {
   var hex = [];
-  //u8 = Uint8Array.from(buf);
-
   u8.forEach(function (i) {
     var h = i.toString(16);
     if (h.length % 2) { h = '0' + h; }
@@ -83,6 +81,18 @@ async function merkleTree(levels, leaves) {
 
 function getProof(tree, hashedLeaf) {
   // TODO
+  let leafIdx;
+  for(var i=0; i<tree[0].length; i++) {
+    if (tree[0][i] == hashedLeaf) {
+        leafIdx = 1;
+        break;
+    }
+  }
+
+  if (leafIdx == null) {
+    console.log("failed to find leaf in tree", hashedLeaf);
+    return;
+  }
 }
 
 async function generateProof(sig, msghash, pubkey, addrs) {
@@ -153,10 +163,13 @@ async function verifyProof(proof, publicSignals, provider) {
     const c = [argv[6], argv[7]];
     const input = argv.slice(8);
 
-    return await contract.verifyProof(a, b, c, input);
+    let ok = await contract.verifyProof(a, b, c, input);
+    console.log(ok);
+    return ok;
 }
 
-let contractAddr;
+// TODO: set based on network
+let contractAddr = "0x5FbDB2315678afecb367f032d93F642f64180aa3";
 
 export default function Home() {
     const [logs, setLogs] = React.useState("Connect your wallet!")
@@ -204,7 +217,11 @@ export default function Home() {
         setLogs("proof generated, verifying in contract...")
 
         let res = await verifyProof(proof, publicSignals, ethersProvider);
-        setLogs(res)
+        if (res) {
+            setLogs("proof verified!")
+        } else {
+            setLogs("invalid proof")
+        }
     }
 
     const deploy = async function() {
@@ -220,8 +237,8 @@ export default function Home() {
         await verifier.deployTransaction.wait()
         setLogs(`Verifier contract has been deployed to: ${verifier.address}`)
 
-       let code = await ethersProvider.getCode(verifier.address);
-        console.log(code)
+        let code = await ethersProvider.getCode(verifier.address);
+        console.log("deployed code", code);
         contractAddr = verifier.address;
     }
 
