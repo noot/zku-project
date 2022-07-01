@@ -8,6 +8,7 @@ import styles from "../styles/Home.module.css"
 import { useForm } from "react-hook-form";
 import { object, string, number, date, InferType } from 'yup';
 import Verifier from "../artifacts/contracts/Verifier.sol/Verifier.json"
+import { saveAs } from 'file-saver';
 
 import { poseidon } from "circomlibjs";
 import getAccountsWithMinBalance from "../src/generate.js";
@@ -154,6 +155,8 @@ async function verifyProof(proof, publicSignals, provider, contractAddr) {
     let contract = new Contract(contractAddr, Verifier.abi)
     contract = contract.connect(provider);
 
+    console.log(publicSignals)
+    console.log(proof)
     const editedPublicSignals = unstringifyBigInts(publicSignals);
     const editedProof = unstringifyBigInts(proof);
     const calldata = await groth16.exportSolidityCallData(editedProof, editedPublicSignals);
@@ -186,9 +189,44 @@ function getContractAddr(chainID) {
     }
 }
 
+// function makeTextFile(text) {
+//     var data = new Blob([text], {type: 'text/plain'});
+
+//     // If we are replacing a previously generated file we need to
+//     // manually revoke the object URL to avoid memory leaks.
+//     if (textFile !== null) {
+//       window.URL.revokeObjectURL(textFile);
+//     }
+
+//     textFile = window.URL.createObjectURL(data);
+
+//     // returns a URL you can use as a href
+//     return textFile;
+// };
+
 export default function Home() {
     const [logs, setLogs] = React.useState("Connect your wallet!")
    // const [logs2, setLogs2] = React.useState("Greeting: ")
+
+  //   var create = document.createElement('create');
+  //   create.className = 'create';
+  //   ReactDOM.render(<div className='create' \>, create)
+  //   //textbox = document.getElementById('textbox');
+
+  // // create.addEventListener('click', function () {
+  //   var link = document.createElement('a');
+  //   link.setAttribute('download', 'info.txt');
+  //   link.href = makeTextFile(textbox.value);
+  //   document.body.appendChild(link);
+
+  //   // wait for the link to be added to the document
+  //   window.requestAnimationFrame(function () {
+  //     var event = new MouseEvent('click');
+  //     link.dispatchEvent(event);
+  //     document.body.removeChild(link);
+  //       });
+    
+  // }, false);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const onSubmit = async function (data) {
@@ -232,10 +270,13 @@ export default function Home() {
 
         setLogs("proof generated, verifying in contract...")
 
+        var blob = new Blob([JSON.stringify({proof, publicSignals})], {type: "text/plain;charset=utf-8"});
+        saveAs(blob, "proofoffunds.txt");
+
         // TODO: also verify that the accounts in the proof have the right balance
         let res = await verifyProof(proof, publicSignals, ethersProvider, getContractAddr(network.chainId));
         if (res) {
-            setLogs("proof verified!")
+            setLogs("proof verified! proof saved to proofoffunds.txt")
         } else {
             setLogs("invalid proof :(")
         }
@@ -255,6 +296,41 @@ export default function Home() {
         setLogs(`Verifier contract has been deployed to: ${verifier.address}`)
     }
 
+    const [selectedFile, setSelectedFile] = React.useState();
+    const [isFilePicked, setIsFilePicked] = React.useState(false);
+
+    const changeHandler = (event) => {
+        setSelectedFile(event.target.files[0]);
+        setIsFilePicked(true);
+    };
+
+    const handleSubmission = () => {
+        //console.log(selectedFile);
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        console.log(evt.target.result);
+        let data = JSON.parse(evt.target.result)
+        if (data.proof == undefined || data.publicSignals == undefined) {
+            setLogs("invalid proof file!");
+            return;
+        }
+
+        const provider = (await detectEthereumProvider()) as any
+        await provider.request({ method: "eth_requestAccounts" })
+
+        const ethersProvider = new providers.Web3Provider(provider)
+        let network = await ethersProvider.getNetwork();
+
+        let res = await verifyProof(data.proof, data.publicSignals, ethersProvider, getContractAddr(network.chainId));
+        if (res) {
+            setLogs("proof verified!")
+        } else {
+            setLogs("invalid proof :(")
+        }
+      };
+      reader.readAsText(selectedFile);
+    };
+
     return (
         <div className={styles.container}>
             <Head>
@@ -270,6 +346,7 @@ export default function Home() {
 
                 <div className={styles.logs}>{logs}</div>
 
+                <h1>Generate a proof</h1>
                 <form onSubmit={handleSubmit(onSubmit)}>
                   {/* register your input into the hook by invoking the "register" function */}
                   <input defaultValue="amount to prove (in ETH)" {...register("amount")} />
@@ -278,6 +355,16 @@ export default function Home() {
                 </form>
 
                 <p></p>
+
+                <h1> Verify a proof</h1>
+                <input type="file" name="file" onChange={changeHandler} />
+                <div>
+                    <button onClick={handleSubmission}>Submit</button>
+                </div>
+
+                <p></p>
+                <h1>Deploy contract</h1>
+                This step is not needed for Mainnet, Goerli, or testing environments.
                <div onClick={() => deploy()} className={styles.button}>
                     deploy contract
                 </div>
