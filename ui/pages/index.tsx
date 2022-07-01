@@ -1,6 +1,4 @@
 import detectEthereumProvider from "@metamask/detect-provider"
-// import { Strategy, ZkIdentity } from "@zk-kit/identity"
-// import { generateMerkleProof, Semaphore } from "@zk-kit/protocols"
 import { providers, utils, Contract, ContractFactory } from "ethers"
 import Head from "next/head"
 import React from "react"
@@ -102,9 +100,6 @@ async function generateProof(sig, msghash, pubkey, addrs, leafIdx) {
     let tree = await merkleTree(3, addrs);
     let leaf = tree[0][leafIdx];
     let merkleProof = getProof(tree, leafIdx);
-    // console.log("leaf", leaf)
-    // console.log("leafIdx", leafIdx)
-    // console.log("merkleProof", merkleProof)
 
     let pubkeyX = pubkey.slice(1, 33);
     let pubkeyY = pubkey.slice(33, 65);
@@ -115,8 +110,8 @@ async function generateProof(sig, msghash, pubkey, addrs, leafIdx) {
       "msghash": scalarToBigIntArray(msghash),
       "pubkey": [scalarToBigIntArray(pubkeyX), scalarToBigIntArray(pubkeyY)],
       "leaf": leaf,
-      "path_elements": merkleProof.elements,// [tree[0][1], tree[1][1], tree[2][1]], // TODO
-      "path_index": merkleProof.indices,//[1n, 1n, 1n], // TODO
+      "path_elements": merkleProof.elements,
+      "path_index": merkleProof.indices,
     }, 
     "./main.wasm","./circuit_final.zkey");
 
@@ -189,44 +184,8 @@ function getContractAddr(chainID) {
     }
 }
 
-// function makeTextFile(text) {
-//     var data = new Blob([text], {type: 'text/plain'});
-
-//     // If we are replacing a previously generated file we need to
-//     // manually revoke the object URL to avoid memory leaks.
-//     if (textFile !== null) {
-//       window.URL.revokeObjectURL(textFile);
-//     }
-
-//     textFile = window.URL.createObjectURL(data);
-
-//     // returns a URL you can use as a href
-//     return textFile;
-// };
-
 export default function Home() {
     const [logs, setLogs] = React.useState("Connect your wallet!")
-   // const [logs2, setLogs2] = React.useState("Greeting: ")
-
-  //   var create = document.createElement('create');
-  //   create.className = 'create';
-  //   ReactDOM.render(<div className='create' \>, create)
-  //   //textbox = document.getElementById('textbox');
-
-  // // create.addEventListener('click', function () {
-  //   var link = document.createElement('a');
-  //   link.setAttribute('download', 'info.txt');
-  //   link.href = makeTextFile(textbox.value);
-  //   document.body.appendChild(link);
-
-  //   // wait for the link to be added to the document
-  //   window.requestAnimationFrame(function () {
-  //     var event = new MouseEvent('click');
-  //     link.dispatchEvent(event);
-  //     document.body.removeChild(link);
-  //       });
-    
-  // }, false);
 
     const { register, handleSubmit, watch, formState: { errors } } = useForm();
     const onSubmit = async function (data) {
@@ -305,7 +264,6 @@ export default function Home() {
     };
 
     const handleSubmission = () => {
-        //console.log(selectedFile);
       const reader = new FileReader();
       reader.onload = async function(evt) {
         console.log(evt.target.result);
